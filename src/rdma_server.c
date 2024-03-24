@@ -129,7 +129,7 @@ static int start_rdma_server(struct sockaddr_in *server_addr)
 	struct rdma_cm_event *cm_event = NULL;
 	int ret = -1;
 	/*  Open a channel used to report asynchronous communication event */
-	cm_event_channel = rdma_create_event_channel();
+	cm_event_channel = rdma_create_event_channel(); // 创建一个用于报告异步通信事件的通道
 	if (!cm_event_channel) {
 		rdma_error("Creating cm event channel failed with errno : (%d)", -errno);
 		return -errno;
@@ -139,14 +139,14 @@ static int start_rdma_server(struct sockaddr_in *server_addr)
 	/* rdma_cm_id is the connection identifier (like socket) which is used 
 	 * to define an RDMA connection. 
 	 */
-	ret = rdma_create_id(cm_event_channel, &cm_server_id, NULL, RDMA_PS_TCP);
+	ret = rdma_create_id(cm_event_channel, &cm_server_id, NULL, RDMA_PS_TCP); //创建一个 RDMA 连接标识符 cm_server_id，用于定义一个 RDMA 连接。rdma_create_id() 函数使用指定的通道和传输协议（这里是 TCP）创建一个 RDMA 连接标识符。
 	if (ret) {
 		rdma_error("Creating server cm id failed with errno: %d ", -errno);
 		return -errno;
 	}
 	debug("A RDMA connection id for the server is created \n");
 	/* Explicit binding of rdma cm id to the socket credentials */
-	ret = rdma_bind_addr(cm_server_id, (struct sockaddr*) server_addr);
+	ret = rdma_bind_addr(cm_server_id, (struct sockaddr*) server_addr); //rdma_bind_addr() 函数将 RDMA 连接标识符绑定到指定的地址。
 	if (ret) {
 		rdma_error("Failed to bind server address, errno: %d \n", -errno);
 		return -errno;
@@ -157,7 +157,7 @@ static int start_rdma_server(struct sockaddr_in *server_addr)
 	 * connected, a new connection management (CM) event is generated on the 
 	 * RDMA CM event channel from where the listening id was created. Here we
 	 * have only one channel, so it is easy. */
-	ret = rdma_listen(cm_server_id, 8); /* backlog = 8 clients, same as TCP, see man listen*/
+	ret = rdma_listen(cm_server_id, 8); /* backlog = 8 clients, same as TCP, see man listen*/ //开始监听传入的 IP 和端口。并指定最大连接数（这里是 8）。
 	if (ret) {
 		rdma_error("rdma_listen failed to listen on server address, errno: %d ",
 				-errno);
@@ -181,13 +181,13 @@ static int start_rdma_server(struct sockaddr_in *server_addr)
 	 * for newly connected client. In the case of RDMA, this is stored in id 
 	 * field. For more details: man rdma_get_cm_event 
 	 */
-	cm_client_id = cm_event->id;
+	cm_client_id = cm_event->id; //获取新连接的客户端标识符 
 	/* now we acknowledge the event. Acknowledging the event free the resources 
 	 * associated with the event structure. Hence any reference to the event 
 	 * must be made before acknowledgment. Like, we have already saved the 
 	 * client id from "id" field before acknowledging the event. 
 	 */
-	ret = rdma_ack_cm_event(cm_event);
+	ret = rdma_ack_cm_event(cm_event); //函数确认接收到的连接管理事件，并释放与事件相关的资源。
 	if (ret) {
 		rdma_error("Failed to acknowledge the cm event errno: %d \n", -errno);
 		return -errno;

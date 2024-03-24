@@ -39,7 +39,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 	struct rdma_cm_event *cm_event = NULL;
 	int ret = -1;
 	/*  Open a channel used to report asynchronous communication event */
-	cm_event_channel = rdma_create_event_channel();
+	cm_event_channel = rdma_create_event_channel();  //代码创建了一个RDMA事件通道
 	if (!cm_event_channel) {
 		rdma_error("Creating cm event channel failed, errno: %d \n", -errno);
 		return -errno;
@@ -48,7 +48,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 	/* rdma_cm_id is the connection identifier (like socket) which is used 
 	 * to define an RDMA connection. 
 	 */
-	ret = rdma_create_id(cm_event_channel, &cm_client_id, 
+	ret = rdma_create_id(cm_event_channel, &cm_client_id,  //函数创建一个RDMA连接标识符
 			NULL,
 			RDMA_PS_TCP);
 	if (ret) {
@@ -58,12 +58,12 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 	/* Resolve destination and optional source addresses from IP addresses  to
 	 * an RDMA address.  If successful, the specified rdma_cm_id will be bound
 	 * to a local device. */
-	ret = rdma_resolve_addr(cm_client_id, NULL, (struct sockaddr*) s_addr, 2000);
+	ret = rdma_resolve_addr(cm_client_id, NULL, (struct sockaddr*) s_addr, 2000); //函数将目标地址解析为RDMA地址，并将cm_client_id与本地设备绑定。
 	if (ret) {
 		rdma_error("Failed to resolve address, errno: %d \n", -errno);
 		return -errno;
 	}
-	debug("waiting for cm event: RDMA_CM_EVENT_ADDR_RESOLVED\n");
+	debug("waiting for cm event: RDMA_CM_EVENT_ADDR_RESOLVED\n");//process_rdma_cm_event函数等待并处理RDMA_CM_EVENT_ADDR_RESOLVED事件，该事件表示RDMA地址已解析完成
 	ret  = process_rdma_cm_event(cm_event_channel, 
 			RDMA_CM_EVENT_ADDR_RESOLVED,
 			&cm_event);
@@ -72,7 +72,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 		return ret;
 	}
 	/* we ack the event */
-	ret = rdma_ack_cm_event(cm_event);
+	ret = rdma_ack_cm_event(cm_event); //确认接收到的事件
 	if (ret) {
 		rdma_error("Failed to acknowledge the CM event, errno: %d\n", -errno);
 		return -errno;
@@ -81,7 +81,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 
 	 /* Resolves an RDMA route to the destination address in order to 
 	  * establish a connection */
-	ret = rdma_resolve_route(cm_client_id, 2000);
+	ret = rdma_resolve_route(cm_client_id, 2000); //函数解析到目标地址的RDMA路由，以建立连接
 	if (ret) {
 		rdma_error("Failed to resolve route, erno: %d \n", -errno);
 	       return -errno;
@@ -95,7 +95,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 		return ret;
 	}
 	/* we ack the event */
-	ret = rdma_ack_cm_event(cm_event);
+	ret = rdma_ack_cm_event(cm_event);//函数确认接收到的事件
 	if (ret) {
 		rdma_error("Failed to acknowledge the CM event, errno: %d \n", -errno);
 		return -errno;
@@ -107,7 +107,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 	 * in the operating system. All resources are tied to a particular PD. 
 	 * And accessing recourses across PD will result in a protection fault.
 	 */
-	pd = ibv_alloc_pd(cm_client_id->verbs);
+	pd = ibv_alloc_pd(cm_client_id->verbs);//函数分配一个保护域（Protection Domain），类似于操作系统中的"进程抽象"，所有资源都与特定的保护域相关联
 	if (!pd) {
 		rdma_error("Failed to alloc pd, errno: %d \n", -errno);
 		return -errno;
@@ -119,7 +119,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 	 * A completion channel is also tied to an RDMA device, hence we will 
 	 * use cm_client_id->verbs. 
 	 */
-	io_completion_channel = ibv_create_comp_channel(cm_client_id->verbs);
+	io_completion_channel = ibv_create_comp_channel(cm_client_id->verbs); //函数创建一个完成通道（Completion Channel），用于发送I/O完成通知
 	if (!io_completion_channel) {
 		rdma_error("Failed to create IO completion event channel, errno: %d\n",
 			       -errno);
@@ -132,7 +132,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 	 * information about the work completion. An I/O request in RDMA world 
 	 * is called "work" ;) 
 	 */
-	client_cq = ibv_create_cq(cm_client_id->verbs /* which device*/, 
+	client_cq = ibv_create_cq(cm_client_id->verbs /* which device*/,  //ibv_create_cq函数创建一个完成队列（Completion Queue），用于存放实际的I/O完成元数据
 			CQ_CAPACITY /* maximum capacity*/, 
 			NULL /* user context, not used here */,
 			io_completion_channel /* which IO completion channel */, 
@@ -142,7 +142,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 		return -errno;
 	}
 	debug("CQ created at %p with %d elements \n", client_cq, client_cq->cqe);
-	ret = ibv_req_notify_cq(client_cq, 0);
+	ret = ibv_req_notify_cq(client_cq, 0); //ibv_req_notify_cq函数请求通知，以便在完成队列中有新的完成操作时得到通知
 	if (ret) {
 		rdma_error("Failed to request notifications, errno: %d\n", -errno);
 		return -errno;
@@ -176,7 +176,7 @@ static int client_prepare_connection(struct sockaddr_in *s_addr)
 static int client_pre_post_recv_buffer()
 {
 	int ret = -1;
-	server_metadata_mr = rdma_buffer_register(pd,
+	server_metadata_mr = rdma_buffer_register(pd, //rdma_buffer_register函数来注册一个内存区域，该区域用于存储服务器的元数据。rdma_buffer_register函数接受一些参数，包括一个指向内存区域的指针、内存区域的大小以及访问权限。
 			&server_metadata_attr,
 			sizeof(server_metadata_attr),
 			(IBV_ACCESS_LOCAL_WRITE));
@@ -188,10 +188,10 @@ static int client_pre_post_recv_buffer()
 	server_recv_sge.length = (uint32_t) server_metadata_mr->length;
 	server_recv_sge.lkey = (uint32_t) server_metadata_mr->lkey;
 	/* now we link it to the request */
-	bzero(&server_recv_wr, sizeof(server_recv_wr));
+	bzero(&server_recv_wr, sizeof(server_recv_wr)); //bzero函数将server_recv_wr结构体清零，并将server_recv_sge结构体的地址赋值给server_recv_wr的sg_list成员，将1赋值给server_recv_wr的num_sge成员。这些操作将接收缓冲区的属性与请求相关联。
 	server_recv_wr.sg_list = &server_recv_sge;
 	server_recv_wr.num_sge = 1;
-	ret = ibv_post_recv(client_qp /* which QP */,
+	ret = ibv_post_recv(client_qp /* which QP */, //代码调用ibv_post_recv函数来提交接收工作请求。该函数接受一些参数，包括一个指向客户端QP（Queue Pair）的指针、一个指向接收工作请求的指针以及一个指向错误工作请求的指针。如果提交成功，函数将返回0，否则返回一个非零值
 		      &server_recv_wr /* receive work request*/,
 		      &bad_server_recv_wr /* error WRs */);
 	if (ret) {
@@ -208,17 +208,17 @@ static int client_connect_to_server()
 	struct rdma_conn_param conn_param;
 	struct rdma_cm_event *cm_event = NULL;
 	int ret = -1;
-	bzero(&conn_param, sizeof(conn_param));
-	conn_param.initiator_depth = 3;
-	conn_param.responder_resources = 3;
+	bzero(&conn_param, sizeof(conn_param)); //rdma_conn_param 结构体变量 conn_param，并使用 bzero() 函数将其初始化为零。这个结构体用于设置连接参数，包括 initiator_depth、responder_resources 和 retry_count。
+	conn_param.initiator_depth = 3;  //表示连接的发起者（客户端）可以同时发送的最大并发请求数。在这里，我们将其设置为 3，表示客户端可以同时发送最多 3 个请求
+	conn_param.responder_resources = 3; // responder_resources 表示连接的响应者（服务器）可以同时处理的最大并发请求数。同样地，我们将其设置为 3。
 	conn_param.retry_count = 3; // if fail, then how many times to retry
-	ret = rdma_connect(cm_client_id, &conn_param);
+	ret = rdma_connect(cm_client_id, &conn_param); //使用 rdma_connect() 函数来发起与服务器的连接。该函数接受一个 rdma_cm_id 结构体指针 cm_client_id 和一个 rdma_conn_param 结构体指针 conn_param 作为参数。
 	if (ret) {
 		rdma_error("Failed to connect to remote host , errno: %d\n", -errno);
 		return -errno;
 	}
 	debug("waiting for cm event: RDMA_CM_EVENT_ESTABLISHED\n");
-	ret = process_rdma_cm_event(cm_event_channel, 
+	ret = process_rdma_cm_event(cm_event_channel,   //process_rdma_cm_event 函数等待并处理 RDMA_CM_EVENT_ESTABLISHED 事件，该事件表示客户端与服务器的连接已建立。
 			RDMA_CM_EVENT_ESTABLISHED,
 			&cm_event);
 	if (ret) {
@@ -244,7 +244,7 @@ static int client_xchange_metadata_with_server()
 {
 	struct ibv_wc wc[2];
 	int ret = -1;
-	client_src_mr = rdma_buffer_register(pd,
+	client_src_mr = rdma_buffer_register(pd, //rdma_buffer_register函数来注册一个名为client_src_mr的内存区域。这个内存区域包含了客户端要发送给服务器的数据。注册内存区域时，指定了访问权限，包括本地写入、远程读取和远程写入
 			src,
 			strlen(src),
 			(IBV_ACCESS_LOCAL_WRITE|
@@ -254,12 +254,12 @@ static int client_xchange_metadata_with_server()
 		rdma_error("Failed to register the first buffer, ret = %d \n", ret);
 		return ret;
 	}
-	/* we prepare metadata for the first buffer */
+	/* we prepare metadata for the first buffer */ //
 	client_metadata_attr.address = (uint64_t) client_src_mr->addr; 
 	client_metadata_attr.length = client_src_mr->length; 
 	client_metadata_attr.stag.local_stag = client_src_mr->lkey;
 	/* now we register the metadata memory */
-	client_metadata_mr = rdma_buffer_register(pd,
+	client_metadata_mr = rdma_buffer_register(pd, //接下来，代码准备了第一个缓冲区的元数据。元数据包括缓冲区的地址、长度和本地标签。然后，代码调用rdma_buffer_register函数来注册一个名为client_metadata_mr的内存区域，用于存储元数据。同样地，注册内存区域时指定了访问权限。
 			&client_metadata_attr,
 			sizeof(client_metadata_attr),
 			IBV_ACCESS_LOCAL_WRITE);
@@ -267,18 +267,18 @@ static int client_xchange_metadata_with_server()
 		rdma_error("Failed to register the client metadata buffer, ret = %d \n", ret);
 		return ret;
 	}
-	/* now we fill up SGE */
+	/* now we fill up SGE */ //然后，代码填充了一个名为client_send_sge的Scatter-Gather元素，用于指定发送工作请求的缓冲区地址、长度和本地键。接着，代码初始化了一个名为client_send_wr的发送工作请求结构，并将client_send_sge添加到其中。还设置了工作请求的操作码为IBV_WR_SEND，表示发送数据。
 	client_send_sge.addr = (uint64_t) client_metadata_mr->addr;
 	client_send_sge.length = (uint32_t) client_metadata_mr->length;
 	client_send_sge.lkey = client_metadata_mr->lkey;
 	/* now we link to the send work request */
-	bzero(&client_send_wr, sizeof(client_send_wr));
+	bzero(&client_send_wr, sizeof(client_send_wr)); //代码初始化了一个名为client_send_wr的发送工作请求结构，并将client_send_sge添加到其中。还设置了工作请求的操作码为IBV_WR_SEND，表示发送数据。
 	client_send_wr.sg_list = &client_send_sge;
 	client_send_wr.num_sge = 1;
 	client_send_wr.opcode = IBV_WR_SEND;
 	client_send_wr.send_flags = IBV_SEND_SIGNALED;
 	/* Now we post it */
-	ret = ibv_post_send(client_qp, 
+	ret = ibv_post_send(client_qp,  //调用ibv_post_send函数将发送工作请求提交到客户端的队列中。
 		       &client_send_wr,
 	       &bad_client_send_wr);
 	if (ret) {
@@ -289,7 +289,7 @@ static int client_xchange_metadata_with_server()
 	/* at this point we are expecting 2 work completion. One for our 
 	 * send and one for recv that we will get from the server for 
 	 * its buffer information */
-	ret = process_work_completion_events(io_completion_channel, 
+	ret = process_work_completion_events(io_completion_channel, //process_work_completion_events函数来等待并处理两个工作完成事件。一个是发送工作请求的完成事件，另一个是接收服务器发送的缓冲区信息的完成事件。如果成功接收到两个工作完成事件，代码会打印服务器发送的缓冲区位置和凭证信息。
 			wc, 2);
 	if(ret != 2) {
 		rdma_error("We failed to get 2 work completions , ret = %d \n",
@@ -310,7 +310,7 @@ static int client_remote_memory_ops()
 {
 	struct ibv_wc wc;
 	int ret = -1;
-	client_dst_mr = rdma_buffer_register(pd,
+	client_dst_mr = rdma_buffer_register(pd, //使用rdma_buffer_register()函数将dst缓冲区注册到RDMA设备上，并指定访问权限为本地写、远程写和远程读。
 			dst,
 			strlen(src),
 			(IBV_ACCESS_LOCAL_WRITE | 
@@ -322,21 +322,22 @@ static int client_remote_memory_ops()
 	}
 	/* Step 1: is to copy the local buffer into the remote buffer. We will 
 	 * reuse the previous variables. */
-	/* now we fill up SGE */
+	/* now we fill up SGE */ 
+	//将本地缓冲区的地址、长度和本地键（lkey）赋值给client_send_sge结构体，表示发送的数据。
 	client_send_sge.addr = (uint64_t) client_src_mr->addr;
 	client_send_sge.length = (uint32_t) client_src_mr->length;
 	client_send_sge.lkey = client_src_mr->lkey;
-	/* now we link to the send work request */
+	/* now we link to the send work request */ //初始化client_send_wr结构体，并设置相关参数，如SGE列表、SGE数量、操作码（IBV_WR_RDMA_WRITE）和发送标志（IBV_SEND_SIGNALED）。
 	bzero(&client_send_wr, sizeof(client_send_wr));
 	client_send_wr.sg_list = &client_send_sge;
 	client_send_wr.num_sge = 1;
 	client_send_wr.opcode = IBV_WR_RDMA_WRITE;
 	client_send_wr.send_flags = IBV_SEND_SIGNALED;
-	/* we have to tell server side info for RDMA */
+	/* we have to tell server side info for RDMA */ //设置远程RDMA操作的相关信息，包括远程键（rkey）和远程地址。
 	client_send_wr.wr.rdma.rkey = server_metadata_attr.stag.remote_stag;
 	client_send_wr.wr.rdma.remote_addr = server_metadata_attr.address;
 	/* Now we post it */
-	ret = ibv_post_send(client_qp, 
+	ret = ibv_post_send(client_qp,  //调用ibv_post_send()函数将发送请求发送到RDMA队列中。
 		       &client_send_wr,
 	       &bad_client_send_wr);
 	if (ret) {
@@ -345,7 +346,7 @@ static int client_remote_memory_ops()
 		return -errno;
 	}
 	/* at this point we are expecting 1 work completion for the write */
-	ret = process_work_completion_events(io_completion_channel, 
+	ret = process_work_completion_events(io_completion_channel,  //函数等待并处理工作完成事件。
 			&wc, 1);
 	if(ret != 1) {
 		rdma_error("We failed to get 1 work completions , ret = %d \n",
@@ -353,21 +354,21 @@ static int client_remote_memory_ops()
 		return ret;
 	}
 	debug("Client side WRITE is complete \n");
-	/* Now we prepare a READ using same variables but for destination */
+	/* Now we prepare a READ using same variables but for destination */ //将目标缓冲区的地址、长度和本地键赋值给client_send_sge结构体，表示接收的数据
 	client_send_sge.addr = (uint64_t) client_dst_mr->addr;
 	client_send_sge.length = (uint32_t) client_dst_mr->length;
 	client_send_sge.lkey = client_dst_mr->lkey;
-	/* now we link to the send work request */
+	/* now we link to the send work request */ //初始化client_send_wr结构体，并设置相关参数，如SGE列表、SGE数量、操作码（IBV_WR_RDMA_READ）和发送标志（IBV_SEND_SIGNALED）。
 	bzero(&client_send_wr, sizeof(client_send_wr));
 	client_send_wr.sg_list = &client_send_sge;
 	client_send_wr.num_sge = 1;
 	client_send_wr.opcode = IBV_WR_RDMA_READ;
 	client_send_wr.send_flags = IBV_SEND_SIGNALED;
-	/* we have to tell server side info for RDMA */
+	/* we have to tell server side info for RDMA */ // 设置远程RDMA操作的相关信息，包括远程键和远程地址。
 	client_send_wr.wr.rdma.rkey = server_metadata_attr.stag.remote_stag;
 	client_send_wr.wr.rdma.remote_addr = server_metadata_attr.address;
 	/* Now we post it */
-	ret = ibv_post_send(client_qp, 
+	ret = ibv_post_send(client_qp,  //函数将发送请求发送到RDMA队列中。
 		       &client_send_wr,
 	       &bad_client_send_wr);
 	if (ret) {
