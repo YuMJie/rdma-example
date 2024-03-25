@@ -1,6 +1,6 @@
 CMakeFiles/rdma_server.dir/src/rdma_server.c.o: \
  /home/yumj/rdma-example/src/rdma_server.c /usr/include/stdc-predef.h \
- /home/yumj/rdma-example/src/rdma_common.h /usr/include/stdio.h \
+ /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/x86_64-linux-gnu/sys/cdefs.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
@@ -22,7 +22,8 @@ CMakeFiles/rdma_server.dir/src/rdma_server.c.o: \
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
  /usr/include/x86_64-linux-gnu/bits/sys_errlist.h \
  /usr/include/x86_64-linux-gnu/bits/stdio.h \
- /usr/include/x86_64-linux-gnu/bits/stdio2.h /usr/include/stdlib.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h \
+ /home/yumj/rdma-example/src/rdma_common.h /usr/include/stdlib.h \
  /usr/include/x86_64-linux-gnu/bits/waitflags.h \
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
  /usr/include/x86_64-linux-gnu/bits/floatn.h \

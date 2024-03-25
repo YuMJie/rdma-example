@@ -6,9 +6,9 @@
  *
  * TODO: Cleanup previously allocated resources in case of an error condition
  */
-
+#include<stdio.h>
 #include "rdma_common.h"
-
+#include "string.h"
 /* These are the RDMA resources needed to setup an RDMA connection */
 /* Event channel, where connection management (cm) related events are relayed */
 static struct rdma_event_channel *cm_event_channel = NULL;
@@ -223,13 +223,17 @@ static int accept_client_connection()
 	//我们将接收缓冲区的地址、长度和本地键（local key）设置到一个名为client_recv_sge的结构体中。这个结构体表示接收缓冲区的传输元素（scatter/gather element）。
 	client_recv_sge.addr = (uint64_t) client_metadata_mr->addr; // same as &client_buffer_attr
 	client_recv_sge.length = client_metadata_mr->length;
+	debug("Client metadata buffer is at %p, length = %d, lkey = %u \n", 
+			client_metadata_mr->addr, client_metadata_mr->length, 
+			client_metadata_mr->lkey);
 	client_recv_sge.lkey = client_metadata_mr->lkey;
 	/* Now we link this SGE to the work request (WR) */
 	bzero(&client_recv_wr, sizeof(client_recv_wr)); //client_recv_sge与一个名为client_recv_wr的工作请求（work request）关联起来。工作请求用于指定接收操作的参数。
 	client_recv_wr.sg_list = &client_recv_sge;
 	client_recv_wr.num_sge = 1; // only one SGE
+	// sleep(5); //sleep for 5 seconds to let client setup its resources
 	ret = ibv_post_recv(client_qp /* which QP */, //使用ibv_post_recv函数将接收工作请求（receive work request）预先提交到客户端的队列对（queue pair）中。
-		      &client_recv_wr /* receive work request*/,
+		      &client_recv_wr /* receive work request*/, //把数据接收到client_recv_sge中
 		      &bad_client_recv_wr /* error WRs */);
 	if (ret) {
 		rdma_error("Failed to pre-post the receive buffer, errno: %d \n", ret);
@@ -346,6 +350,8 @@ static int send_server_metadata_to_client()  //该函数用于向连接的客户
        server_send_wr.opcode = IBV_WR_SEND; // This is a send request 
        server_send_wr.send_flags = IBV_SEND_SIGNALED; // We want to get notification 
        /* This is a fast data path operation. Posting an I/O request */
+	   	// sleep(50);
+
 	   //代码调用 ibv_post_send() 函数将发送请求提交到客户端的队列对列（QP）中，并检查是否提交成功。
        ret = ibv_post_send(client_qp /* which QP */,   
 		       &server_send_wr /* Send request that we prepared before */, 
@@ -368,7 +374,11 @@ static int send_server_metadata_to_client()  //该函数用于向连接的客户
 /* This is server side logic. Server passively waits for the client to call 
  * rdma_disconnect() and then it will clean up its resources */
 static int disconnect_and_cleanup()
-{
+{	
+	sleep(5);
+	void * add=server_buffer_mr->addr;
+	char *str = (char *)add;
+	printf("server_buffer_mr->addr: %s\n", str);
 	struct rdma_cm_event *cm_event = NULL;
 	int ret = -1;
        /* Now we wait for the client to send us disconnect event */

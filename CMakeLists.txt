@@ -3,7 +3,9 @@
 cmake_minimum_required (VERSION 2.6)
 
 project (rdma-example)
-
+if (ACN_RDMA_DEBUG)
+    add_compile_definitions(ACN_RDMA_DEBUG)
+endif()
 set(PROJECT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
