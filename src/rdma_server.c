@@ -371,6 +371,8 @@ static int send_server_metadata_to_client()  //该函数用于向连接的客户
        return 0;
 }
 
+
+
 /* This is server side logic. Server passively waits for the client to call 
  * rdma_disconnect() and then it will clean up its resources */
 static int disconnect_and_cleanup()

@@ -258,6 +258,7 @@ static int client_xchange_metadata_with_server()
 	client_metadata_attr.address = (uint64_t) client_src_mr->addr; 
 	client_metadata_attr.length = client_src_mr->length; 
 	client_metadata_attr.stag.local_stag = client_src_mr->lkey;
+	client_metadata_attr.stag.il = 0; 
 	/* now we register the metadata memory */
 	client_metadata_mr = rdma_buffer_register(pd, //接下来，代码准备了第一个缓冲区的元数据。元数据包括缓冲区的地址、长度和本地标签。然后，代码调用rdma_buffer_register函数来注册一个名为client_metadata_mr的内存区域，用于存储元数据。同样地，注册内存区域时指定了访问权限。
 			&client_metadata_attr,
@@ -340,6 +341,9 @@ static int client_remote_memory_ops()
 	ret = ibv_post_send(client_qp,  //调用ibv_post_send()函数将发送请求发送到RDMA队列中。
 		       &client_send_wr,
 	       &bad_client_send_wr);
+	// ret = ibv_post_send(client_qp,  //调用ibv_post_send()函数将发送请求发送到RDMA队列中。
+	// 		&client_send_wr,
+	// 	&bad_client_send_wr);
 	if (ret) {
 		rdma_error("Failed to write client src buffer, errno: %d \n", 
 				-errno);

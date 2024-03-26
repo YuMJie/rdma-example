@@ -46,6 +46,8 @@ Client resource clean up is complete
 atr@atr:~/rdma-example$ 
 
 ```
-
+```
+./bin/rdma_client -a 10.119.46.61 -s textstring
+```
 ## Does not have an RDMA device?
 In case you do not have an RDMA device to test the code, you can setup SofitWARP software RDMA device on your Linux machine. Follow instructions here: [https://github.com/animeshtrivedi/blog/blob/master/post/2019-06-26-siw.md](https://github.com/animeshtrivedi/blog/blob/master/post/2019-06-26-siw.md).

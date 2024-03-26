@@ -66,6 +66,7 @@ struct __attribute((packed)) rdma_buffer_attr {
 	  uint32_t local_stag;
 	  /* if we receive, we call it remote stag */
 	  uint32_t remote_stag;
+	  uint32_t il;
   }stag;
 };
 /* resolves a given destination name to sin_addr */
